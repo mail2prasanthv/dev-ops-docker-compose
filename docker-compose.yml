@@ -1,0 +1,54 @@
+version: '3'
+services:
+    docker-mysql:
+        container_name: application-db-server
+        image: mysql
+        restart: always
+        environment:
+            - MYSQL_ROOT_PASSWORD=12345678
+            - MYSQL_DATABASE=mydb
+        volumes:
+            - ./sql:/docker-entrypoint-initdb.d
+        ports:
+            - "6666:3306"
+        healthcheck:
+            test: "mysql --user=root -password=12345678 --execute \"SHOW DATABASES\""
+            interval: 1m
+            timeout: 30s
+            retries: 5
+    coupon-service-app:
+        container_name: coupon-service-app
+        image: openjdk:11
+        restart: on-failure
+        volumes:
+            - ./services/coupon.jar:/tmp/coupon.jar
+        depends_on:
+            - docker-mysql
+        ports:
+            - "10555:8080"
+        entrypoint: "java -jar /tmp/coupon.jar"
+        healthcheck:
+            test: "curl http://localhost:10555/couponapi/coupons/XMASSALE"
+            interval: 1m
+            timeout: 30s
+            retries: 5
+            start_period: 30s
+    product-service-app:
+        container_name: product-service-app
+        image: openjdk:11
+        depends_on:
+            - docker-mysql
+            - coupon-service-app
+        restart: on-failure
+        volumes:
+            - ./services/product.jar:/tmp/product.jar
+        ports:
+            - "10556:8081"
+        entrypoint: "java -jar /tmp/product.jar"
+        healthcheck:
+            test: "curl http://localhost:10556/productapi/products/1"
+            interval: 1m
+            timeout: 30s
+            retries: 5
+            start_period: 30s
+

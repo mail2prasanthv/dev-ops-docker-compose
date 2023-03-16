@@ -1,0 +1,10 @@
+version: '3.3'
+services:
+    web: #name of the service
+        image: httpd
+        container_name: my-web-server
+        ports:
+            - "8080:80"
+
+# The above is equivalent to the 
+# docker run -dit --name my-web-server -p 8080:80 httpd
